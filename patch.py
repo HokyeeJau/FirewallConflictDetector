@@ -159,7 +159,7 @@ def _detect_conflict_between_pure_(policy_1: Policy, policy_2: Policy) -> Dict[s
         elif relation == 2 or relation == 1:
             conflict = 'redundant'
         else:
-            return action_relation_pack(0, 0, 0, 0, 0, 0, '')
+            conflict = 'correlated'
     else:
         if relation == 1:
             conflict = 'shadowed'
@@ -325,43 +325,34 @@ def detect_conflicts_between_policies(policy_1: List[str], policy_2: List[str], 
             for src_port_1, src_port_2 in product(socket_1['src_port'], socket_2['src_port']):
                 for dst_ip_1, dst_ip_2 in product(socket_1['dst_ip'], socket_2['dst_ip']):
                     for dst_port_1, dst_port_2 in product(socket_1['dst_port'], socket_2['dst_port']):
-                        if src_ip_1['end'] < src_ip_2['start'] or dst_ip_1['end'] < dst_ip_2['start']:
-                            pass
-                        elif src_ip_1['start'] > src_ip_2['end'] or dst_ip_1['start'] > dst_ip_2['end']:
-                            pass
-                        elif dst_port_1['end'] < dst_port_2['start']:
-                            pass
-                        elif src_port_1['start'] > src_port_2['end']:
-                            pass
-                        else:
-                            p1 = Policy(pid=policy_1[config.id], protocol=dst_port_1['protocol'],
-                                        src_ip=decimalize(src_ip_1), src_port=src_port_1,
-                                        dst_ip=decimalize(dst_ip_1), dst_port=dst_port_1,
-                                        inactive=policy_1[config.inactive], action=policy_1[config.action]
-                                        )
-                            p2 = Policy(pid=policy_2[config.id], protocol=dst_port_2['protocol'],
-                                        src_ip=decimalize(src_ip_2), src_port=src_port_2,
-                                        dst_ip=decimalize(dst_ip_2), dst_port=dst_port_2,
-                                        inactive=policy_2[config.inactive], action=policy_2[config.action]
-                                        )
-                            conflict: Dict[str, Union[int, str]] = _detect_conflict_between_pure_(p1, p2)
-                            conflict['pre'] = p1.pid
-                            conflict['sub'] = p2.pid
-                            print(conflict)
+                        p1 = Policy(pid=policy_1[config.id], protocol=dst_port_1['protocol'],
+                                    src_ip=decimalize(src_ip_1), src_port=src_port_1,
+                                    dst_ip=decimalize(dst_ip_1), dst_port=dst_port_1,
+                                    inactive=policy_1[config.inactive], action=policy_1[config.action]
+                                    )
+                        p2 = Policy(pid=policy_2[config.id], protocol=dst_port_2['protocol'],
+                                    src_ip=decimalize(src_ip_2), src_port=src_port_2,
+                                    dst_ip=decimalize(dst_ip_2), dst_port=dst_port_2,
+                                    inactive=policy_2[config.inactive], action=policy_2[config.action]
+                                    )
+                        conflict: Dict[str, Union[int, str]] = _detect_conflict_between_pure_(p1, p2)
+                        conflict['pre'] = p1.pid
+                        conflict['sub'] = p2.pid
+                        print(conflict)
 
-                            if conflict['conflict']:
-                                conflict[
-                                    'pre_src_socket'] = f"{src_ip_1['start']}-{src_ip_1['end']}:{src_port_1['start']}-{src_port_1['end']}"
-                                conflict[
-                                    'pre_dst_socket'] = f"{dst_ip_1['start']}-{dst_ip_1['end']}:{dst_port_1['start']}-{dst_port_1['end']}"
-                                conflict[
-                                    'sub_src_socket'] = f"{src_ip_2['start']}-{src_ip_2['end']}:{src_port_2['start']}-{src_port_2['end']}"
-                                conflict[
-                                    'sub_dst_socket'] = f"{dst_ip_2['start']}-{dst_ip_2['end']}:{dst_port_2['start']}-{dst_port_2['end']}"
-                                conflict['protocol'] = f"pre: {p1.protocol}, sub: {p2.protocol}"
-                                conflict['action'] = f"pre: {policy_1[config.action]}, sub: {policy_2[config.action]}"
+                        if conflict['conflict']:
+                            conflict[
+                                'pre_src_socket'] = f"{src_ip_1['start']}-{src_ip_1['end']}:{src_port_1['start']}-{src_port_1['end']}"
+                            conflict[
+                                'pre_dst_socket'] = f"{dst_ip_1['start']}-{dst_ip_1['end']}:{dst_port_1['start']}-{dst_port_1['end']}"
+                            conflict[
+                                'sub_src_socket'] = f"{src_ip_2['start']}-{src_ip_2['end']}:{src_port_2['start']}-{src_port_2['end']}"
+                            conflict[
+                                'sub_dst_socket'] = f"{dst_ip_2['start']}-{dst_ip_2['end']}:{dst_port_2['start']}-{dst_port_2['end']}"
+                            conflict['protocol'] = f"pre: {p1.protocol}, sub: {p2.protocol}"
+                            conflict['action'] = f"pre: {policy_1[config.action]}, sub: {policy_2[config.action]}"
 
-                                conflicts.append(conflict)
+                            conflicts.append(conflict)
     return conflicts
 
 
@@ -515,7 +506,7 @@ if __name__ == '__main__':
                         help='directory for holding conflict reports')
     parser.add_argument('--first_policy', type=int, default=0,
                         help='the first line of policies in csv, default 1')
-    parser.add_argument('--private_cloud', type=int, default=0,
+    parser.add_argument('--private_cloud', type=int, default=1,
                         help='if the firewall is belonging to private cloud')
 
     # filenames
